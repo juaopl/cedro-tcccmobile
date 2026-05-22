@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Avatar from '../../components/ui/Avatar';
@@ -19,138 +20,149 @@ const paciente = {
   assinante: false,
 };
 
-// Dados mockados do próximo agendamento
 const proximoAgendamento = {
   psicologo: 'Dra. Carla Mendes',
   especialidade: 'Psicóloga Clínica',
   data: 'Hoje, 15h30',
-  avatar: null,
 };
 
-// Dados mockados do psicólogo vinculado
 const meuPsicologo = {
   nome: 'Dra. Carla Mendes',
   especialidade: 'Psicóloga Clínica · CRP 06/12345',
   status: 'online' as const,
-  avatar: null,
   sessoes: 8,
 };
 
 export default function HomePaciente() {
   const router = useRouter();
 
+  // Animações de entrada em stagger para cada seção
+  const anims = Array.from({ length: 5 }, () => ({
+    opacidade: useRef(new Animated.Value(0)).current,
+    translateY: useRef(new Animated.Value(28)).current,
+  }));
+
+  useEffect(() => {
+    Animated.stagger(
+      90,
+      anims.map(({ opacidade, translateY }) =>
+        Animated.parallel([
+          Animated.timing(opacidade, { toValue: 1, duration: 380, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: 380, useNativeDriver: true }),
+        ])
+      )
+    ).start();
+  }, []);
+
+  const secao = (i: number) => ({
+    opacity: anims[i].opacidade,
+    transform: [{ translateY: anims[i].translateY }],
+  });
+
   return (
     <SafeAreaView style={estilos.container}>
-      <ScrollView
-        contentContainerStyle={estilos.conteudo}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+
         {/* Header com saudação */}
-        <View style={estilos.header}>
+        <Animated.View style={[estilos.header, secao(0)]}>
           <View>
             <Text style={estilos.saudacao}>Olá, {paciente.nome.split(' ')[0]} 👋</Text>
             <Text style={estilos.subSaudacao}>Como você está hoje?</Text>
           </View>
           <Avatar nome={paciente.nome} tamanho="md" />
-        </View>
+        </Animated.View>
 
         {/* Card do próximo agendamento */}
-        <View style={estilos.cardAgendamento}>
-          <View style={estilos.agendamentoTopo}>
-            <Text style={estilos.agendamentoLabel}>Próxima sessão</Text>
-            <Badge status="online" mostrarTexto={false} />
-          </View>
-          <View style={estilos.agendamentoInfo}>
-            <Avatar nome={proximoAgendamento.psicologo} tamanho="md" />
-            <View style={{ flex: 1 }}>
-              <Text style={estilos.agendamentoNome}>{proximoAgendamento.psicologo}</Text>
-              <Text style={estilos.agendamentoEspecialidade}>
-                {proximoAgendamento.especialidade}
-              </Text>
-              <Text style={estilos.agendamentoData}>📅 {proximoAgendamento.data}</Text>
+        <Animated.View style={secao(1)}>
+          <View style={estilos.cardAgendamento}>
+            <View style={estilos.agendamentoTopo}>
+              <Text style={estilos.agendamentoLabel}>Próxima sessão</Text>
+              <Badge status="online" mostrarTexto={false} />
             </View>
-          </View>
-          {/* Botões rápidos de acesso à sessão */}
-          <View style={estilos.botoesRapidos}>
-            <TouchableOpacity
-              style={estilos.botaoRapido}
-              onPress={() => router.push('/(paciente)/chat')}
-            >
-              <Text style={estilos.botaoRapidoIcone}>💬</Text>
-              <Text style={estilos.botaoRapidoTexto}>Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={estilos.botaoRapido}
-              onPress={() => router.push({ pathname: '/(paciente)/chamada', params: { modo: 'voz' } })}
-            >
-              <Text style={estilos.botaoRapidoIcone}>📞</Text>
-              <Text style={estilos.botaoRapidoTexto}>Voz</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={estilos.botaoRapido}
-              onPress={() => router.push({ pathname: '/(paciente)/chamada', params: { modo: 'video' } })}
-            >
-              <Text style={estilos.botaoRapidoIcone}>📹</Text>
-              <Text style={estilos.botaoRapidoTexto}>Vídeo</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Seção do psicólogo vinculado */}
-        <Text style={estilos.secaoTitulo}>Seu psicólogo</Text>
-        <View style={estilos.cardPsicologo}>
-          <Avatar nome={meuPsicologo.nome} tamanho="lg" />
-          <View style={estilos.psicologoInfo}>
-            <Text style={estilos.psicologoNome}>{meuPsicologo.nome}</Text>
-            <Text style={estilos.psicologoEspecialidade}>{meuPsicologo.especialidade}</Text>
-            <Badge status={meuPsicologo.status} />
-          </View>
-          <View style={estilos.psicologoSessoes}>
-            <Text style={estilos.sessoesNumero}>{meuPsicologo.sessoes}</Text>
-            <Text style={estilos.sessoesLabel}>sessões</Text>
-          </View>
-        </View>
-
-        {/* Banner de plano — exibido apenas para não assinantes */}
-        {!paciente.assinante && (
-          <TouchableOpacity
-            style={estilos.bannerPlano}
-            onPress={() => router.push('/(paciente)/plano')}
-            activeOpacity={0.85}
-          >
-            <View style={estilos.bannerConteudo}>
-              <Text style={estilos.bannerIcone}>⚡</Text>
+            <View style={estilos.agendamentoInfo}>
+              <Avatar nome={proximoAgendamento.psicologo} tamanho="md" />
               <View style={{ flex: 1 }}>
-                <Text style={estilos.bannerTitulo}>
-                  Você tem {paciente.chamadasRestantes} chamadas restantes
-                </Text>
-                <Text style={estilos.bannerSubtitulo}>
-                  Assine e tenha chamadas ilimitadas →
-                </Text>
+                <Text style={estilos.agendamentoNome}>{proximoAgendamento.psicologo}</Text>
+                <Text style={estilos.agendamentoEspecialidade}>{proximoAgendamento.especialidade}</Text>
+                <Text style={estilos.agendamentoData}>📅 {proximoAgendamento.data}</Text>
               </View>
             </View>
-          </TouchableOpacity>
+            <View style={estilos.botoesRapidos}>
+              <TouchableOpacity style={estilos.botaoRapido} onPress={() => router.push('/(paciente)/chat')}>
+                <Text style={estilos.botaoRapidoIcone}>💬</Text>
+                <Text style={estilos.botaoRapidoTexto}>Chat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={estilos.botaoRapido} onPress={() => router.push({ pathname: '/(paciente)/chamada', params: { modo: 'voz' } })}>
+                <Text style={estilos.botaoRapidoIcone}>📞</Text>
+                <Text style={estilos.botaoRapidoTexto}>Voz</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={estilos.botaoRapido} onPress={() => router.push({ pathname: '/(paciente)/chamada', params: { modo: 'video' } })}>
+                <Text style={estilos.botaoRapidoIcone}>📹</Text>
+                <Text style={estilos.botaoRapidoTexto}>Vídeo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Seção do psicólogo vinculado */}
+        <Animated.View style={secao(2)}>
+          <Text style={estilos.secaoTitulo}>Seu psicólogo</Text>
+          <View style={estilos.cardPsicologo}>
+            <Avatar nome={meuPsicologo.nome} tamanho="lg" />
+            <View style={estilos.psicologoInfo}>
+              <Text style={estilos.psicologoNome}>{meuPsicologo.nome}</Text>
+              <Text style={estilos.psicologoEspecialidade}>{meuPsicologo.especialidade}</Text>
+              <Badge status={meuPsicologo.status} />
+            </View>
+            <View style={estilos.psicologoSessoes}>
+              <Text style={estilos.sessoesNumero}>{meuPsicologo.sessoes}</Text>
+              <Text style={estilos.sessoesLabel}>sessões</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Banner de plano */}
+        {!paciente.assinante && (
+          <Animated.View style={secao(3)}>
+            <TouchableOpacity
+              style={estilos.bannerPlano}
+              onPress={() => router.push('/(paciente)/plano')}
+              activeOpacity={0.85}
+            >
+              <View style={estilos.bannerConteudo}>
+                <Text style={estilos.bannerIcone}>⚡</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={estilos.bannerTitulo}>
+                    Você tem {paciente.chamadasRestantes} chamadas restantes
+                  </Text>
+                  <Text style={estilos.bannerSubtitulo}>
+                    Assine e tenha chamadas ilimitadas →
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
         )}
 
         {/* Atalhos de navegação */}
-        <Text style={estilos.secaoTitulo}>Acesso rápido</Text>
-        <View style={estilos.atalhos}>
-          <TouchableOpacity
-            style={estilos.atalho}
-            onPress={() => router.push('/(paciente)/plano')}
-          >
-            <Text style={estilos.atalhoIcone}>💎</Text>
-            <Text style={estilos.atalhoTexto}>Meu Plano</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={estilos.atalho}>
-            <Text style={estilos.atalhoIcone}>📋</Text>
-            <Text style={estilos.atalhoTexto}>Histórico</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={estilos.atalho}>
-            <Text style={estilos.atalhoIcone}>⚙️</Text>
-            <Text style={estilos.atalhoTexto}>Ajustes</Text>
-          </TouchableOpacity>
-        </View>
+        <Animated.View style={secao(4)}>
+          <Text style={estilos.secaoTitulo}>Acesso rápido</Text>
+          <View style={estilos.atalhos}>
+            <TouchableOpacity style={estilos.atalho} onPress={() => router.push('/(paciente)/plano')}>
+              <Text style={estilos.atalhoIcone}>💎</Text>
+              <Text style={estilos.atalhoTexto}>Meu Plano</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={estilos.atalho}>
+              <Text style={estilos.atalhoIcone}>📋</Text>
+              <Text style={estilos.atalhoTexto}>Histórico</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={estilos.atalho}>
+              <Text style={estilos.atalhoIcone}>⚙️</Text>
+              <Text style={estilos.atalhoTexto}>Ajustes</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
       </ScrollView>
     </SafeAreaView>
   );

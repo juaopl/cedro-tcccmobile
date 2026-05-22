@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  Animated,
 } from 'react-native';
 import { Colors, BorderRadius, Espacamento, Sombra } from '../../constants/theme';
 
@@ -30,6 +31,17 @@ export default function Button({
   estilo,
   estiloTexto,
 }: ButtonProps) {
+  // Animação de escala ao pressionar
+  const escala = new Animated.Value(1);
+
+  const aoPressionar = () => {
+    Animated.sequence([
+      Animated.timing(escala, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+      Animated.timing(escala, { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+    onPress();
+  };
+
   const estilosBotao = [
     estilos.base,
     estilos[variante],
@@ -45,21 +57,23 @@ export default function Button({
   ];
 
   return (
-    <TouchableOpacity
-      style={estilosBotao}
-      onPress={onPress}
-      disabled={desabilitado || carregando}
-      activeOpacity={0.8}
-    >
-      {carregando ? (
-        <ActivityIndicator
-          color={variante === 'primary' ? Colors.branco : Colors.primaria}
-          size="small"
-        />
-      ) : (
-        <Text style={estilosTexto}>{titulo}</Text>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={{ transform: [{ scale: escala }] }}>
+      <TouchableOpacity
+        style={estilosBotao}
+        onPress={aoPressionar}
+        disabled={desabilitado || carregando}
+        activeOpacity={1}
+      >
+        {carregando ? (
+          <ActivityIndicator
+            color={variante === 'primary' ? Colors.branco : Colors.primaria}
+            size="small"
+          />
+        ) : (
+          <Text style={estilosTexto}>{titulo}</Text>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

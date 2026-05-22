@@ -20,6 +20,17 @@
       "package": "com.cedro.app"
     },
     "scheme": "cedro",
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "4f691bea-6e81-4fb5-8da7-d04662efc367"
+      }
+    },
+    "owner": "caquissrsrs"
   }
 }

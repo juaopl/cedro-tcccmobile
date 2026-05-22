@@ -1,37 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Dimensions,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Avatar from '../../components/ui/Avatar';
 import { Colors, Espacamento, BorderRadius } from '../../constants/theme';
-
-const { width } = Dimensions.get('window');
 
 export default function ChamadaPaciente() {
   const router = useRouter();
   const { modo: modoParam } = useLocalSearchParams<{ modo: string }>();
 
-  const [modo, setModo] = useState<'voz' | 'video'>(
-    modoParam === 'video' ? 'video' : 'voz'
-  );
+  const [modo, setModo] = useState<'voz' | 'video'>(modoParam === 'video' ? 'video' : 'voz');
   const [mudo, setMudo] = useState(false);
   const [altoFalante, setAltoFalante] = useState(true);
   const [cameraAtiva, setCameraAtiva] = useState(true);
   const [segundos, setSegundos] = useState(0);
 
-  // Timer da chamada em andamento
+  // Anel pulsante com Animated.loop
+  const pulso = useRef(new Animated.Value(1)).current;
+  const opacidadePulso = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulso, { toValue: 1.25, duration: 900, useNativeDriver: true }),
+          Animated.timing(pulso, { toValue: 1, duration: 900, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(opacidadePulso, { toValue: 0, duration: 900, useNativeDriver: true }),
+          Animated.timing(opacidadePulso, { toValue: 0.6, duration: 900, useNativeDriver: true }),
+        ]),
+      ])
+    ).start();
+  }, []);
+
   useEffect(() => {
     const intervalo = setInterval(() => setSegundos((s) => s + 1), 1000);
     return () => clearInterval(intervalo);
   }, []);
 
-  // Formata segundos em MM:SS
   const formatarTempo = (s: number) => {
     const min = Math.floor(s / 60).toString().padStart(2, '0');
     const sec = (s % 60).toString().padStart(2, '0');
@@ -42,58 +56,51 @@ export default function ChamadaPaciente() {
 
   return (
     <SafeAreaView style={estilos.container}>
-      {/* Fundo com gradiente simulado via camadas */}
-      <View style={estilos.gradienteTopo} />
-      <View style={estilos.gradienteFundo} />
+      {/* Gradiente real com expo-linear-gradient */}
+      <LinearGradient
+        colors={['#1a3d1c', '#1a2e1b', '#0d1a0e']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-      {/* Conteúdo principal */}
       <View style={estilos.conteudo}>
-        {/* Indicador de modo */}
         <View style={estilos.modoBadge}>
-          <Text style={estilos.modoTexto}>
-            {modo === 'video' ? '📹 Vídeo' : '📞 Voz'}
-          </Text>
+          <Text style={estilos.modoTexto}>{modo === 'video' ? '📹 Vídeo' : '📞 Voz'}</Text>
         </View>
 
-        {/* Avatar grande do participante */}
+        {/* Avatar com anel pulsante animado */}
         <View style={estilos.avatarContainer}>
+          <Animated.View
+            style={[
+              estilos.anel,
+              { transform: [{ scale: pulso }], opacity: opacidadePulso },
+            ]}
+          />
           <Avatar nome="Dra. Carla Mendes" tamanho="xl" />
-          {/* Anel pulsante simulado */}
-          <View style={estilos.anel} />
         </View>
 
-        {/* Nome e status da chamada */}
         <Text style={estilos.nome}>Dra. Carla Mendes</Text>
-        <Text style={estilos.status}>
-          Chamada em andamento · {formatarTempo(segundos)}
-        </Text>
+        <Text style={estilos.status}>Chamada em andamento · {formatarTempo(segundos)}</Text>
 
-        {/* Alternador de modo voz/vídeo */}
         <View style={estilos.alternarModo}>
           <TouchableOpacity
             style={[estilos.botaoModo, modo === 'voz' && estilos.botaoModoAtivo]}
             onPress={() => setModo('voz')}
           >
             <Text style={estilos.botaoModoIcone}>📞</Text>
-            <Text style={[estilos.botaoModoTexto, modo === 'voz' && estilos.botaoModoTextoAtivo]}>
-              Voz
-            </Text>
+            <Text style={[estilos.botaoModoTexto, modo === 'voz' && estilos.botaoModoTextoAtivo]}>Voz</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[estilos.botaoModo, modo === 'video' && estilos.botaoModoAtivo]}
             onPress={() => setModo('video')}
           >
             <Text style={estilos.botaoModoIcone}>📹</Text>
-            <Text style={[estilos.botaoModoTexto, modo === 'video' && estilos.botaoModoTextoAtivo]}>
-              Vídeo
-            </Text>
+            <Text style={[estilos.botaoModoTexto, modo === 'video' && estilos.botaoModoTextoAtivo]}>Vídeo</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Controles da chamada */}
       <View style={estilos.controles}>
-        {/* Mudo */}
         <View style={estilos.controleItem}>
           <TouchableOpacity
             style={[estilos.botaoControle, mudo && estilos.botaoControleAtivo]}
@@ -104,39 +111,28 @@ export default function ChamadaPaciente() {
           <Text style={estilos.controleLabel}>{mudo ? 'Ativar' : 'Mudo'}</Text>
         </View>
 
-        {/* Câmera — visível apenas no modo vídeo */}
         {modo === 'video' && (
           <View style={estilos.controleItem}>
             <TouchableOpacity
               style={[estilos.botaoControle, !cameraAtiva && estilos.botaoControleAtivo]}
               onPress={() => setCameraAtiva(!cameraAtiva)}
             >
-              <Text style={estilos.botaoControleIcone}>
-                {cameraAtiva ? '📷' : '🚫'}
-              </Text>
+              <Text style={estilos.botaoControleIcone}>{cameraAtiva ? '📷' : '🚫'}</Text>
             </TouchableOpacity>
-            <Text style={estilos.controleLabel}>
-              {cameraAtiva ? 'Câmera' : 'Sem câmera'}
-            </Text>
+            <Text style={estilos.controleLabel}>{cameraAtiva ? 'Câmera' : 'Sem câmera'}</Text>
           </View>
         )}
 
-        {/* Alto-falante */}
         <View style={estilos.controleItem}>
           <TouchableOpacity
             style={[estilos.botaoControle, !altoFalante && estilos.botaoControleAtivo]}
             onPress={() => setAltoFalante(!altoFalante)}
           >
-            <Text style={estilos.botaoControleIcone}>
-              {altoFalante ? '🔊' : '🔈'}
-            </Text>
+            <Text style={estilos.botaoControleIcone}>{altoFalante ? '🔊' : '🔈'}</Text>
           </TouchableOpacity>
-          <Text style={estilos.controleLabel}>
-            {altoFalante ? 'Alto-falante' : 'Fone'}
-          </Text>
+          <Text style={estilos.controleLabel}>{altoFalante ? 'Alto-falante' : 'Fone'}</Text>
         </View>
 
-        {/* Encerrar chamada */}
         <View style={estilos.controleItem}>
           <TouchableOpacity style={estilos.botaoEncerrar} onPress={encerrar}>
             <Text style={estilos.botaoControleIcone}>📵</Text>
@@ -151,24 +147,6 @@ export default function ChamadaPaciente() {
 const estilos = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.fundoEscuro,
-  },
-  // Gradiente simulado com duas camadas sobrepostas
-  gradienteTopo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
-    backgroundColor: '#1a3d1c',
-    opacity: 0.9,
-  },
-  gradienteFundo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
     backgroundColor: Colors.fundoEscuro,
   },
   conteudo: {
@@ -195,14 +173,17 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Espacamento.xl,
+    width: 148,
+    height: 148,
   },
+  // Anel pulsante — posicionado atrás do avatar
   anel: {
     position: 'absolute',
     width: 148,
     height: 148,
     borderRadius: 74,
-    borderWidth: 2,
-    borderColor: 'rgba(76, 175, 80, 0.4)',
+    borderWidth: 2.5,
+    borderColor: Colors.secundaria,
   },
   nome: {
     fontSize: 26,

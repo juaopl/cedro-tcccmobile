@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import { Colors, Espacamento, BorderRadius, Tipografia } from '../../constants/t
 
 const { width } = Dimensions.get('window');
 
-// Conteúdo dos slides do onboarding
 const slides = [
   {
     id: '1',
@@ -39,28 +38,69 @@ const slides = [
   },
 ];
 
+// Componente de slide com animação de entrada (fade + translateY)
+function Slide({ item, scrollX, index }: { item: typeof slides[0]; scrollX: Animated.Value; index: number }) {
+  const opacidade = scrollX.interpolate({
+    inputRange: [(index - 1) * width, index * width, (index + 1) * width],
+    outputRange: [0, 1, 0],
+    extrapolate: 'clamp',
+  });
+  const translateY = scrollX.interpolate({
+    inputRange: [(index - 1) * width, index * width, (index + 1) * width],
+    outputRange: [40, 0, 40],
+    extrapolate: 'clamp',
+  });
+  // Escala do ícone ao entrar no slide
+  const escalaIcone = scrollX.interpolate({
+    inputRange: [(index - 1) * width, index * width, (index + 1) * width],
+    outputRange: [0.5, 1, 0.5],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <View style={estilos.slide}>
+      <Animated.Text style={[estilos.icone, { transform: [{ scale: escalaIcone }] }]}>
+        {item.icone}
+      </Animated.Text>
+      <Animated.Text style={[estilos.titulo, { opacity: opacidade, transform: [{ translateY }] }]}>
+        {item.titulo}
+      </Animated.Text>
+      <Animated.Text style={[estilos.descricao, { opacity: opacidade, transform: [{ translateY }] }]}>
+        {item.descricao}
+      </Animated.Text>
+    </View>
+  );
+}
+
 export default function Onboarding() {
   const router = useRouter();
   const [indiceAtual, setIndiceAtual] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  // Animação de entrada da tela inteira
+  const fadeEntrada = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeEntrada, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const ehUltimoSlide = indiceAtual === slides.length - 1;
 
-  // Avança para o próximo slide ou finaliza o onboarding
   const avancar = () => {
     if (ehUltimoSlide) {
       router.replace('/(auth)/role-select');
       return;
     }
     const proximo = indiceAtual + 1;
-    flatListRef.current?.scrollToIndex({ index: proximo });
+    flatListRef.current?.scrollToIndex({ index: proximo, animated: true });
     setIndiceAtual(proximo);
   };
 
-  const pular = () => {
-    router.replace('/(auth)/role-select');
-  };
+  const pular = () => router.replace('/(auth)/role-select');
 
   const aoMudarSlide = (e: any) => {
     const novoIndice = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -69,68 +109,63 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={estilos.container}>
-      {/* Botão pular — visível apenas nos primeiros slides */}
-      <View style={estilos.header}>
-        {!ehUltimoSlide && (
-          <TouchableOpacity onPress={pular}>
-            <Text style={estilos.textoPular}>Pular</Text>
+      <Animated.View style={[{ flex: 1 }, { opacity: fadeEntrada }]}>
+        <View style={estilos.header}>
+          {!ehUltimoSlide && (
+            <TouchableOpacity onPress={pular}>
+              <Text style={estilos.textoPular}>Pular</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Animated.FlatList
+          ref={flatListRef}
+          data={slides}
+          keyExtractor={(item) => item.id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={aoMudarSlide}
+          renderItem={({ item, index }) => (
+            <Slide item={item} scrollX={scrollX} index={index} />
+          )}
+        />
+
+        {/* Dots de paginação animados */}
+        <View style={estilos.dots}>
+          {slides.map((_, i) => {
+            const largura = scrollX.interpolate({
+              inputRange: [(i - 1) * width, i * width, (i + 1) * width],
+              outputRange: [8, 24, 8],
+              extrapolate: 'clamp',
+            });
+            const opacidade = scrollX.interpolate({
+              inputRange: [(i - 1) * width, i * width, (i + 1) * width],
+              outputRange: [0.3, 1, 0.3],
+              extrapolate: 'clamp',
+            });
+            return (
+              <Animated.View
+                key={i}
+                style={[estilos.dot, { width: largura, opacity: opacidade }]}
+              />
+            );
+          })}
+        </View>
+
+        <View style={estilos.rodape}>
+          <TouchableOpacity style={estilos.botao} onPress={avancar} activeOpacity={0.85}>
+            <Text style={estilos.textoBotao}>
+              {ehUltimoSlide ? 'Começar agora →' : 'Continuar'}
+            </Text>
           </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Carrossel de slides */}
-      <Animated.FlatList
-        ref={flatListRef}
-        data={slides}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        onMomentumScrollEnd={aoMudarSlide}
-        renderItem={({ item }) => (
-          <View style={estilos.slide}>
-            <Text style={estilos.icone}>{item.icone}</Text>
-            <Text style={estilos.titulo}>{item.titulo}</Text>
-            <Text style={estilos.descricao}>{item.descricao}</Text>
-          </View>
-        )}
-      />
-
-      {/* Dots de paginação */}
-      <View style={estilos.dots}>
-        {slides.map((_, i) => {
-          // Largura animada do dot ativo
-          const largura = scrollX.interpolate({
-            inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-            outputRange: [8, 24, 8],
-            extrapolate: 'clamp',
-          });
-          const opacidade = scrollX.interpolate({
-            inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-            outputRange: [0.3, 1, 0.3],
-            extrapolate: 'clamp',
-          });
-          return (
-            <Animated.View
-              key={i}
-              style={[estilos.dot, { width: largura, opacity: opacidade }]}
-            />
-          );
-        })}
-      </View>
-
-      {/* Botão de ação */}
-      <View style={estilos.rodape}>
-        <TouchableOpacity style={estilos.botao} onPress={avancar} activeOpacity={0.85}>
-          <Text style={estilos.textoBotao}>
-            {ehUltimoSlide ? 'Começar agora →' : 'Continuar'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
