@@ -1,0 +1,327 @@
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import Avatar from '../../components/ui/Avatar';
+import Badge from '../../components/ui/Badge';
+import { Colors, Espacamento, BorderRadius, Tipografia, Sombra } from '../../constants/theme';
+
+// Mensagens mockadas — perspectiva do psicólogo
+const mensagensIniciais = [
+  {
+    id: '1',
+    texto: 'Olá, Ana! Como você está se sentindo hoje?',
+    enviada: true,
+    hora: '14:02',
+  },
+  {
+    id: '2',
+    texto: 'Oi, Dra. Carla! Estou um pouco ansiosa, mas melhor do que ontem.',
+    enviada: false,
+    hora: '14:04',
+  },
+  {
+    id: '3',
+    texto: 'Que bom que está melhor. Quer me contar o que aconteceu ontem?',
+    enviada: true,
+    hora: '14:05',
+  },
+  {
+    id: '4',
+    texto: 'Sim, tive uma situação no trabalho que me deixou bem estressada...',
+    enviada: false,
+    hora: '14:07',
+  },
+  {
+    id: '5',
+    texto: 'Entendo. Vamos explorar isso juntas. Pode me descrever como foi essa situação?',
+    enviada: true,
+    hora: '14:08',
+  },
+];
+
+type Mensagem = {
+  id: string;
+  texto: string;
+  enviada: boolean;
+  hora: string;
+};
+
+export default function ChatPsicologo() {
+  const router = useRouter();
+  const [mensagens, setMensagens] = useState<Mensagem[]>(mensagensIniciais);
+  const [texto, setTexto] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+
+  const enviarMensagem = () => {
+    if (!texto.trim()) return;
+    const nova: Mensagem = {
+      id: Date.now().toString(),
+      texto: texto.trim(),
+      enviada: true,
+      hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMensagens((prev) => [...prev, nova]);
+    setTexto('');
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const renderMensagem = ({ item }: { item: Mensagem }) => (
+    <View
+      style={[
+        estilos.bolhaContainer,
+        item.enviada ? estilos.bolhaContainerEnviada : estilos.bolhaContainerRecebida,
+      ]}
+    >
+      <View
+        style={[
+          estilos.bolha,
+          item.enviada ? estilos.bolhaEnviada : estilos.bolhaRecebida,
+        ]}
+      >
+        <Text
+          style={[
+            estilos.textoBolha,
+            item.enviada ? estilos.textoBolhaEnviada : estilos.textoBolhaRecebida,
+          ]}
+        >
+          {item.texto}
+        </Text>
+        <Text
+          style={[
+            estilos.hora,
+            item.enviada ? estilos.horaEnviada : estilos.horaRecebida,
+          ]}
+        >
+          {item.hora}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={estilos.container}>
+      {/* Header do chat */}
+      <View style={estilos.header}>
+        <TouchableOpacity onPress={() => router.back()} style={estilos.botaoVoltar}>
+          <Text style={estilos.textoVoltar}>←</Text>
+        </TouchableOpacity>
+        <Avatar nome="Ana Lima" tamanho="sm" />
+        <View style={estilos.headerInfo}>
+          <Text style={estilos.headerNome}>Ana Lima</Text>
+          <Badge status="online" />
+        </View>
+        <View style={estilos.headerAcoes}>
+          <TouchableOpacity
+            style={estilos.botaoHeader}
+            onPress={() =>
+              router.push({ pathname: '/(psicologo)/chamada', params: { modo: 'voz' } })
+            }
+          >
+            <Text style={estilos.botaoHeaderIcone}>📞</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={estilos.botaoHeader}
+            onPress={() =>
+              router.push({ pathname: '/(psicologo)/chamada', params: { modo: 'video' } })
+            }
+          >
+            <Text style={estilos.botaoHeaderIcone}>📹</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={mensagens}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMensagem}
+          contentContainerStyle={estilos.listaMensagens}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        />
+
+        <View style={estilos.inputContainer}>
+          <TouchableOpacity style={estilos.botaoAnexo}>
+            <Text style={estilos.botaoAnexoIcone}>📎</Text>
+          </TouchableOpacity>
+          <TextInput
+            style={estilos.input}
+            placeholder="Digite uma mensagem..."
+            placeholderTextColor={Colors.textoSecundario}
+            value={texto}
+            onChangeText={setTexto}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity
+            style={[estilos.botaoEnviar, !texto.trim() && estilos.botaoEnviarDesabilitado]}
+            onPress={enviarMensagem}
+            disabled={!texto.trim()}
+          >
+            <Text style={estilos.botaoEnviarIcone}>➤</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const estilos = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.fundo,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Espacamento.md,
+    backgroundColor: Colors.branco,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borda,
+    gap: Espacamento.sm,
+    ...Sombra.leve,
+  },
+  botaoVoltar: {
+    padding: Espacamento.xs,
+  },
+  textoVoltar: {
+    fontSize: 22,
+    color: Colors.primaria,
+  },
+  headerInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  headerNome: {
+    ...Tipografia.label,
+    fontSize: 15,
+  },
+  headerAcoes: {
+    flexDirection: 'row',
+    gap: Espacamento.xs,
+  },
+  botaoHeader: {
+    width: 38,
+    height: 38,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.verdeClaro,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoHeaderIcone: {
+    fontSize: 16,
+  },
+  listaMensagens: {
+    padding: Espacamento.md,
+    gap: Espacamento.sm,
+  },
+  bolhaContainer: {
+    flexDirection: 'row',
+    marginVertical: 2,
+  },
+  bolhaContainerEnviada: {
+    justifyContent: 'flex-end',
+  },
+  bolhaContainerRecebida: {
+    justifyContent: 'flex-start',
+  },
+  bolha: {
+    maxWidth: '78%',
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Espacamento.md,
+    paddingVertical: Espacamento.sm,
+  },
+  bolhaEnviada: {
+    backgroundColor: Colors.primaria,
+    borderBottomRightRadius: 4,
+  },
+  bolhaRecebida: {
+    backgroundColor: Colors.branco,
+    borderBottomLeftRadius: 4,
+    ...Sombra.leve,
+  },
+  textoBolha: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'sans-serif',
+  },
+  textoBolhaEnviada: {
+    color: Colors.branco,
+  },
+  textoBolhaRecebida: {
+    color: Colors.textoPrincipal,
+  },
+  hora: {
+    fontSize: 11,
+    marginTop: 4,
+    fontFamily: 'sans-serif',
+  },
+  horaEnviada: {
+    color: 'rgba(255,255,255,0.65)',
+    textAlign: 'right',
+  },
+  horaRecebida: {
+    color: Colors.textoSecundario,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: Espacamento.md,
+    backgroundColor: Colors.branco,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borda,
+    gap: Espacamento.sm,
+  },
+  botaoAnexo: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoAnexoIcone: {
+    fontSize: 20,
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    backgroundColor: Colors.fundo,
+    borderRadius: BorderRadius.xl,
+    paddingHorizontal: Espacamento.md,
+    paddingVertical: Espacamento.sm,
+    fontSize: 15,
+    color: Colors.textoPrincipal,
+    fontFamily: 'sans-serif',
+    borderWidth: 1,
+    borderColor: Colors.borda,
+  },
+  botaoEnviar: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.primaria,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoEnviarDesabilitado: {
+    opacity: 0.4,
+  },
+  botaoEnviarIcone: {
+    fontSize: 16,
+    color: Colors.branco,
+  },
+});

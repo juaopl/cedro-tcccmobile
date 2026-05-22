@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Cedro",
+    "slug": "cedro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#2e7d32"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cedro.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2e7d32"
+      },
+      "package": "com.cedro.app"
+    },
+    "scheme": "cedro",
+    "plugins": ["expo-router"]
+  }
+}
