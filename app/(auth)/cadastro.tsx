@@ -8,7 +8,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Input from '../../components/ui/Input';
@@ -21,46 +20,62 @@ type Role = 'paciente' | 'psicologo';
 const configPorRole: Record<Role, { icone: string; titulo: string; subtitulo: string }> = {
   paciente: {
     icone: '🧘',
-    titulo: 'Bem-vindo de volta',
-    subtitulo: 'Entre para continuar sua jornada de bem-estar.',
+    titulo: 'Criar sua conta',
+    subtitulo: 'Comece sua jornada de bem-estar com o Cedro.',
   },
   psicologo: {
     icone: '🩺',
-    titulo: 'Área do psicólogo',
-    subtitulo: 'Acesse sua agenda e conecte-se com seus pacientes.',
+    titulo: 'Cadastro de psicólogo',
+    subtitulo: 'Crie sua conta e comece a atender pela plataforma.',
   },
 };
 
-export default function Login() {
+export default function Cadastro() {
   const router = useRouter();
   const { role } = useLocalSearchParams<{ role: Role }>();
   const perfil = role ?? 'paciente';
   const config = configPorRole[perfil];
 
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [crp, setCrp] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [carregandoGoogle, setCarregandoGoogle] = useState(false);
+  const [erroSenha, setErroSenha] = useState('');
 
-  const { request, promptAsync } = useGoogleAuth((user) => {
+  const { request, promptAsync } = useGoogleAuth(() => {
     setCarregandoGoogle(false);
-    // Redireciona após login com Google
     router.replace(perfil === 'psicologo' ? '/(psicologo)/home' : '/(paciente)/home');
   });
 
-  const entrar = () => {
+  const cadastrar = () => {
+    if (senha !== confirmarSenha) {
+      setErroSenha('As senhas não coincidem');
+      return;
+    }
+    setErroSenha('');
     setCarregando(true);
     setTimeout(() => {
       setCarregando(false);
       router.replace(perfil === 'psicologo' ? '/(psicologo)/home' : '/(paciente)/home');
-    }, 1200);
+    }, 1400);
   };
 
-  const entrarComGoogle = async () => {
+  const cadastrarComGoogle = async () => {
     setCarregandoGoogle(true);
     await promptAsync();
     setCarregandoGoogle(false);
   };
+
+  const formularioValido =
+    nome.trim() &&
+    email.trim() &&
+    senha.trim() &&
+    confirmarSenha.trim() &&
+    (perfil === 'paciente' || (crp.trim() && especialidade.trim()));
 
   return (
     <SafeAreaView style={estilos.container}>
@@ -80,7 +95,14 @@ export default function Login() {
           <Text style={estilos.titulo}>{config.titulo}</Text>
           <Text style={estilos.subtitulo}>{config.subtitulo}</Text>
 
-          {/* Formulário */}
+          {/* Campos comuns */}
+          <Input
+            label="Nome completo"
+            placeholder="Seu nome"
+            value={nome}
+            onChangeText={setNome}
+            autoCapitalize="words"
+          />
           <Input
             label="E-mail"
             placeholder="seu@email.com"
@@ -92,21 +114,57 @@ export default function Login() {
           />
           <Input
             label="Senha"
-            placeholder="Sua senha"
+            placeholder="Mínimo 6 caracteres"
             value={senha}
             onChangeText={setSenha}
             secureTextEntry
           />
+          <Input
+            label="Confirmar senha"
+            placeholder="Repita sua senha"
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            secureTextEntry
+            erro={erroSenha}
+          />
 
-          <TouchableOpacity style={estilos.linkEsqueci}>
-            <Text style={estilos.textoEsqueci}>Esqueci minha senha</Text>
-          </TouchableOpacity>
+          {/* Campos exclusivos do psicólogo */}
+          {perfil === 'psicologo' && (
+            <>
+              <View style={estilos.separador}>
+                <Text style={estilos.separadorTexto}>Dados profissionais</Text>
+              </View>
+              <Input
+                label="CRP"
+                placeholder="Ex: 06/12345"
+                value={crp}
+                onChangeText={setCrp}
+                autoCapitalize="characters"
+              />
+              <Input
+                label="Especialidade"
+                placeholder="Ex: Psicologia Clínica"
+                value={especialidade}
+                onChangeText={setEspecialidade}
+                autoCapitalize="words"
+              />
+            </>
+          )}
+
+          {/* Termos */}
+          <Text style={estilos.termos}>
+            Ao se cadastrar, você concorda com os{' '}
+            <Text style={estilos.termosLink}>Termos de Uso</Text>
+            {' '}e a{' '}
+            <Text style={estilos.termosLink}>Política de Privacidade</Text>
+            {' '}do Cedro.
+          </Text>
 
           <Button
-            titulo="Entrar"
-            onPress={entrar}
+            titulo="Criar conta"
+            onPress={cadastrar}
             carregando={carregando}
-            desabilitado={!email || !senha}
+            desabilitado={!formularioValido}
           />
 
           {/* Divisor */}
@@ -116,23 +174,23 @@ export default function Login() {
             <View style={estilos.linhaDivisor} />
           </View>
 
-          {/* Botão Google */}
+          {/* Google */}
           <Button
-            titulo={carregandoGoogle ? 'Conectando...' : 'Continuar com Google'}
-            onPress={entrarComGoogle}
+            titulo={carregandoGoogle ? 'Conectando...' : 'Cadastrar com Google'}
+            onPress={cadastrarComGoogle}
             variante="secondary"
             carregando={carregandoGoogle}
             desabilitado={!request}
           />
 
-          {/* Links */}
+          {/* Link login */}
           <TouchableOpacity
-            style={estilos.linkCadastro}
-            onPress={() => router.push({ pathname: '/(auth)/cadastro', params: { role: perfil } })}
+            style={estilos.linkLogin}
+            onPress={() => router.push({ pathname: '/(auth)/login', params: { role: perfil } })}
           >
             <Text style={estilos.textoLink}>
-              Não tem conta?{' '}
-              <Text style={estilos.textoLinkDestaque}>Cadastre-se</Text>
+              Já tem conta?{' '}
+              <Text style={estilos.textoLinkDestaque}>Entrar</Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -174,13 +232,28 @@ const estilos = StyleSheet.create({
     lineHeight: 22,
     marginBottom: Espacamento.xl,
   },
-  linkEsqueci: {
-    alignSelf: 'flex-end',
-    marginBottom: Espacamento.lg,
-    marginTop: -Espacamento.sm,
+  separador: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.borda,
+    paddingTop: Espacamento.md,
+    marginBottom: Espacamento.md,
+    marginTop: Espacamento.sm,
   },
-  textoEsqueci: {
-    ...Tipografia.corpoSecundario,
+  separadorTexto: {
+    ...Tipografia.label,
+    color: Colors.textoSecundario,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontSize: 11,
+  },
+  termos: {
+    ...Tipografia.pequeno,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: Espacamento.lg,
+    marginTop: Espacamento.sm,
+  },
+  termosLink: {
     color: Colors.primaria,
     fontWeight: '600',
   },
@@ -198,7 +271,7 @@ const estilos = StyleSheet.create({
   textoDivisor: {
     ...Tipografia.corpoSecundario,
   },
-  linkCadastro: {
+  linkLogin: {
     alignItems: 'center',
     marginTop: Espacamento.xl,
     paddingVertical: Espacamento.sm,

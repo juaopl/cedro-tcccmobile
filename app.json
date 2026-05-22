@@ -25,7 +25,8 @@
     "scheme": "cedro",
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "router": {
