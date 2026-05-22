@@ -1,28 +1,26 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
+  View, Text, StyleSheet, TouchableOpacity,
+  SafeAreaView, ScrollView,
 } from 'react-native';
-import { useRouter, Link } from 'expo-router';
-import { Colors, Espacamento, BorderRadius, Tipografia, Sombra } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import Header from '../../components/Header';
+import { useTheme } from '../../hooks/useTheme';
+import { Espacamento, BorderRadius, Sombra } from '../../constants/theme';
 
 type Role = 'paciente' | 'psicologo';
 
-// Opções de perfil disponíveis
-const opcoes: { role: Role; icone: string; titulo: string; descricao: string }[] = [
+const opcoes = [
   {
-    role: 'paciente',
-    icone: '🧘',
+    role: 'paciente' as Role,
+    icone: 'person' as const,
     titulo: 'Sou paciente',
     descricao: 'Quero encontrar apoio psicológico e cuidar da minha saúde mental.',
   },
   {
-    role: 'psicologo',
-    icone: '🩺',
+    role: 'psicologo' as Role,
+    icone: 'medical' as const,
     titulo: 'Sou psicólogo(a)',
     descricao: 'Quero atender pacientes e oferecer suporte psicológico pela plataforma.',
   },
@@ -30,186 +28,106 @@ const opcoes: { role: Role; icone: string; titulo: string; descricao: string }[]
 
 export default function RoleSelect() {
   const router = useRouter();
+  const { cores } = useTheme();
   const [selecionado, setSelecionado] = useState<Role | null>(null);
 
-  const continuar = () => {
-    if (!selecionado) return;
-    router.push({ pathname: '/(auth)/login', params: { role: selecionado } });
-  };
-
   return (
-    <SafeAreaView style={estilos.container}>
-      <ScrollView
-        contentContainerStyle={estilos.conteudo}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Cabeçalho */}
-        <Text style={estilos.emoji}>🌱</Text>
-        <Text style={estilos.titulo}>Como você está{'\n'}entrando?</Text>
-        <Text style={estilos.subtitulo}>
+    <SafeAreaView style={[estilos.container, { backgroundColor: cores.fundo }]}>
+      <Header mostrarLogo />
+      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+        <Text style={[estilos.titulo, { color: cores.textoPrincipal }]}>
+          Como você está entrando?
+        </Text>
+        <Text style={[estilos.subtitulo, { color: cores.textoSecundario }]}>
           Escolha seu perfil para personalizar sua experiência no Cedro.
         </Text>
 
-        {/* Cards de seleção */}
-        <View style={estilos.cards}>
-          {opcoes.map((opcao) => {
-            const ativo = selecionado === opcao.role;
-            return (
-              <TouchableOpacity
-                key={opcao.role}
-                style={[estilos.card, ativo && estilos.cardAtivo]}
-                onPress={() => setSelecionado(opcao.role)}
-                activeOpacity={0.85}
-              >
-                <Text style={estilos.cardIcone}>{opcao.icone}</Text>
-                <View style={estilos.cardTexto}>
-                  <Text style={[estilos.cardTitulo, ativo && estilos.cardTituloAtivo]}>
-                    {opcao.titulo}
-                  </Text>
-                  <Text style={estilos.cardDescricao}>{opcao.descricao}</Text>
-                </View>
-                {/* Indicador de seleção */}
-                <View style={[estilos.radio, ativo && estilos.radioAtivo]}>
-                  {ativo && <View style={estilos.radioPonto} />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        {opcoes.map((op) => {
+          const ativo = selecionado === op.role;
+          return (
+            <TouchableOpacity
+              key={op.role}
+              style={[
+                estilos.card,
+                { backgroundColor: cores.card, borderColor: ativo ? cores.primaria : cores.borda },
+                Sombra.card,
+              ]}
+              onPress={() => setSelecionado(op.role)}
+              activeOpacity={0.85}
+            >
+              {/* Ícone */}
+              <View style={[estilos.iconeContainer, { backgroundColor: cores.verdeClaro }]}>
+                <Ionicons name={op.icone} size={26} color={cores.primaria} />
+              </View>
+
+              {/* Texto */}
+              <View style={{ flex: 1 }}>
+                <Text style={[estilos.cardTitulo, { color: cores.textoPrincipal }]}>{op.titulo}</Text>
+                <Text style={[estilos.cardDescricao, { color: cores.textoSecundario }]}>{op.descricao}</Text>
+              </View>
+
+              {/* Radio */}
+              <View style={[estilos.radio, { borderColor: ativo ? cores.primaria : cores.borda }]}>
+                {ativo && (
+                  <View style={[estilos.radioCheck, { backgroundColor: cores.primaria }]}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
 
         {/* Botão continuar */}
         <TouchableOpacity
-          style={[estilos.botao, !selecionado && estilos.botaoDesabilitado]}
-          onPress={continuar}
+          style={[
+            estilos.botao,
+            { backgroundColor: selecionado ? cores.primaria : cores.botaoDesabilitado },
+          ]}
+          onPress={() => selecionado && router.push({ pathname: '/(auth)/login', params: { role: selecionado } })}
           disabled={!selecionado}
           activeOpacity={0.85}
         >
-          <Text style={estilos.textoBotao}>Continuar</Text>
+          <Text style={estilos.botaoTexto}>Continuar</Text>
         </TouchableOpacity>
 
-        {/* Link para login direto */}
-        <Link href={{ pathname: '/(auth)/login', params: { role: 'paciente' } }} asChild>
-          <TouchableOpacity style={estilos.linkLogin}>
-            <Text style={estilos.textoLink}>
-              Já tem conta?{' '}
-              <Text style={estilos.textoLinkDestaque}>Entrar</Text>
-            </Text>
-          </TouchableOpacity>
-        </Link>
+        {/* Link login */}
+        <TouchableOpacity
+          style={estilos.linkContainer}
+          onPress={() => router.push({ pathname: '/(auth)/login', params: { role: 'paciente' } })}
+        >
+          <Text style={[estilos.linkTexto, { color: cores.textoSecundario }]}>
+            Já tem conta?{' '}
+            <Text style={[estilos.linkDestaque, { color: cores.primaria }]}>Entrar</Text>
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const estilos = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.fundo,
-  },
-  conteudo: {
-    padding: Espacamento.lg,
-    paddingTop: Espacamento.xxl,
-    flexGrow: 1,
-  },
-  emoji: {
-    fontSize: 48,
+  container: { flex: 1 },
+  conteudo: { padding: Espacamento.md, paddingTop: Espacamento.lg },
+  titulo: { fontFamily: 'serif', fontSize: 24, fontWeight: '700', marginBottom: Espacamento.xs },
+  subtitulo: { fontSize: 14, lineHeight: 22, marginBottom: Espacamento.xl },
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: Espacamento.md,
+    borderRadius: 16, padding: Espacamento.md, borderWidth: 2,
     marginBottom: Espacamento.md,
   },
-  titulo: {
-    ...Tipografia.tituloGrande,
-    marginBottom: Espacamento.sm,
-  },
-  subtitulo: {
-    ...Tipografia.corpoSecundario,
-    lineHeight: 22,
-    marginBottom: Espacamento.xl,
-  },
-  cards: {
-    gap: Espacamento.md,
-    marginBottom: Espacamento.xl,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.branco,
-    borderRadius: BorderRadius.lg,
-    padding: Espacamento.lg,
-    borderWidth: 2,
-    borderColor: Colors.borda,
-    gap: Espacamento.md,
-    ...Sombra.leve,
-  },
-  cardAtivo: {
-    borderColor: Colors.primaria,
-    backgroundColor: Colors.verdeClaro,
-  },
-  cardIcone: {
-    fontSize: 36,
-  },
-  cardTexto: {
-    flex: 1,
-  },
-  cardTitulo: {
-    ...Tipografia.subtitulo,
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  cardTituloAtivo: {
-    color: Colors.primaria,
-  },
-  cardDescricao: {
-    ...Tipografia.corpoSecundario,
-    lineHeight: 20,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: BorderRadius.full,
-    borderWidth: 2,
-    borderColor: Colors.borda,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioAtivo: {
-    borderColor: Colors.primaria,
-  },
-  radioPonto: {
-    width: 11,
-    height: 11,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primaria,
-  },
+  iconeContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cardTitulo: { fontSize: 17, fontWeight: '700', marginBottom: 4 },
+  cardDescricao: { fontSize: 13, lineHeight: 20 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioCheck: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   botao: {
-    backgroundColor: Colors.primaria,
-    height: 56,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Espacamento.lg,
-    shadowColor: Colors.primaria,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    paddingVertical: 16, borderRadius: 12, alignItems: 'center',
+    marginTop: Espacamento.sm, marginBottom: Espacamento.md,
+    shadowColor: '#2e7d32', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, elevation: 4,
   },
-  botaoDesabilitado: {
-    opacity: 0.45,
-  },
-  textoBotao: {
-    color: Colors.branco,
-    fontSize: 17,
-    fontWeight: '700',
-    fontFamily: 'sans-serif',
-  },
-  linkLogin: {
-    alignItems: 'center',
-    paddingVertical: Espacamento.sm,
-  },
-  textoLink: {
-    ...Tipografia.corpoSecundario,
-  },
-  textoLinkDestaque: {
-    color: Colors.primaria,
-    fontWeight: '700',
-  },
+  botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  linkContainer: { alignItems: 'center', paddingVertical: Espacamento.sm },
+  linkTexto: { fontSize: 14 },
+  linkDestaque: { fontWeight: '700' },
 });

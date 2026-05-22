@@ -1,319 +1,167 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  Switch,
+  View, Text, StyleSheet, ScrollView,
+  TouchableOpacity, SafeAreaView, Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Avatar from '../../components/ui/Avatar';
-import Badge from '../../components/ui/Badge';
-import { Colors, Espacamento, BorderRadius, Tipografia, Sombra } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { Espacamento, Sombra } from '../../constants/theme';
 
-// Dados mockados do psicólogo
-const psicologo = {
-  nome: 'Carla Mendes',
-  crp: 'CRP 06/12345',
-  especialidade: 'Psicóloga Clínica',
-};
+const psicologo = { nome: 'Carla Mendes', crp: 'CRP 06/12345' };
 
-// Pacientes agendados para hoje
 const pacientesHoje = [
-  {
-    id: '1',
-    nome: 'Ana Lima',
-    horario: '09:00',
-    status: 'confirmado',
-    sessaoNumero: 8,
-  },
-  {
-    id: '2',
-    nome: 'Bruno Souza',
-    horario: '10:30',
-    status: 'confirmado',
-    sessaoNumero: 3,
-  },
-  {
-    id: '3',
-    nome: 'Camila Rocha',
-    horario: '14:00',
-    status: 'pendente',
-    sessaoNumero: 1,
-  },
-  {
-    id: '4',
-    nome: 'Diego Ferreira',
-    horario: '15:30',
-    status: 'confirmado',
-    sessaoNumero: 12,
-  },
+  { id: '1', nome: 'Ana Lima', hora: '09:00', sessao: 8, concluido: false },
+  { id: '2', nome: 'Bruno Souza', hora: '10:30', sessao: 3, concluido: false },
+  { id: '3', nome: 'Camila Rocha', hora: '14:00', sessao: 1, concluido: true },
+  { id: '4', nome: 'Diego Ferreira', hora: '15:30', sessao: 12, concluido: false },
 ];
 
 export default function HomePsicologo() {
   const router = useRouter();
+  const { cores } = useTheme();
   const [online, setOnline] = useState(true);
 
-  const totalHoje = pacientesHoje.length;
-  const confirmados = pacientesHoje.filter((p) => p.status === 'confirmado').length;
+  const iniciais = (nome: string) =>
+    nome.split(' ').slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
   return (
-    <SafeAreaView style={estilos.container}>
-      <ScrollView
-        contentContainerStyle={estilos.conteudo}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header com saudação e toggle de status */}
-        <View style={estilos.header}>
-          <View style={estilos.headerEsquerda}>
-            <Avatar nome={psicologo.nome} tamanho="md" />
-            <View>
-              <Text style={estilos.saudacao}>
-                Olá, Dra. {psicologo.nome.split(' ')[0]}
+    <SafeAreaView style={[estilos.container, { backgroundColor: cores.fundo }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+
+        {/* Header */}
+        <View style={[estilos.headerSaudacao, { backgroundColor: cores.fundo }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[estilos.saudacao, { color: cores.textoPrincipal }]}>
+              Olá, Dr(a). {psicologo.nome.split(' ')[0]}
+            </Text>
+            <Text style={[estilos.crp, { color: cores.textoSecundario }]}>{psicologo.crp}</Text>
+          </View>
+          <View style={estilos.headerDireita}>
+            <View style={estilos.toggleContainer}>
+              <Text style={[estilos.toggleLabel, { color: cores.textoSecundario }]}>
+                {online ? 'Online' : 'Offline'}
               </Text>
-              <Text style={estilos.crp}>{psicologo.crp}</Text>
+              <Switch
+                value={online}
+                onValueChange={setOnline}
+                trackColor={{ false: '#9e9e9e', true: cores.primaria }}
+                thumbColor="#fff"
+              />
+            </View>
+            <View style={[estilos.avatar, { backgroundColor: cores.verdeClaro }]}>
+              <Text style={[estilos.avatarTexto, { color: cores.primaria }]}>CM</Text>
             </View>
           </View>
-          {/* Toggle online/offline */}
-          <View style={estilos.toggleContainer}>
-            <Text style={estilos.toggleLabel}>{online ? 'Online' : 'Offline'}</Text>
-            <Switch
-              value={online}
-              onValueChange={setOnline}
-              trackColor={{ false: Colors.offline, true: Colors.online }}
-              thumbColor={Colors.branco}
-            />
-          </View>
         </View>
 
-        {/* Badge de status atual */}
-        <View style={estilos.statusBadge}>
-          <Badge status={online ? 'online' : 'offline'} />
-          <Text style={estilos.statusTexto}>
-            {online
-              ? 'Você está disponível para atendimentos'
-              : 'Você está indisponível no momento'}
-          </Text>
-        </View>
-
-        {/* Resumo do dia */}
-        <Text style={estilos.secaoTitulo}>Resumo de hoje</Text>
-        <View style={estilos.resumo}>
-          <View style={estilos.resumoCard}>
-            <Text style={estilos.resumoNumero}>{totalHoje}</Text>
-            <Text style={estilos.resumoLabel}>Agendadas</Text>
+        {/* Card resumo */}
+        <View style={[estilos.card, { backgroundColor: cores.card }, Sombra.card]}>
+          <View style={estilos.resumoRow}>
+            <Ionicons name="calendar" size={24} color={cores.primaria} />
+            <View style={{ flex: 1 }}>
+              <Text style={[estilos.resumoTitulo, { color: cores.textoPrincipal }]}>Hoje</Text>
+              <Text style={[estilos.resumoNum, { color: cores.primaria }]}>
+                {pacientesHoje.length} sessões agendadas
+              </Text>
+            </View>
           </View>
-          <View style={[estilos.resumoCard, estilos.resumoCardDestaque]}>
-            <Text style={[estilos.resumoNumero, { color: Colors.branco }]}>
-              {confirmados}
-            </Text>
-            <Text style={[estilos.resumoLabel, { color: 'rgba(255,255,255,0.8)' }]}>
-              Confirmadas
-            </Text>
-          </View>
-          <View style={estilos.resumoCard}>
-            <Text style={estilos.resumoNumero}>{totalHoje - confirmados}</Text>
-            <Text style={estilos.resumoLabel}>Pendentes</Text>
-          </View>
-        </View>
-
-        {/* Lista de pacientes do dia */}
-        <Text style={estilos.secaoTitulo}>Pacientes de hoje</Text>
-        <View style={estilos.listaPacientes}>
-          {pacientesHoje.map((paciente) => (
-            <View key={paciente.id} style={estilos.cardPaciente}>
-              {/* Horário */}
-              <View style={estilos.horarioContainer}>
-                <Text style={estilos.horario}>{paciente.horario}</Text>
-                <View
-                  style={[
-                    estilos.statusDot,
-                    {
-                      backgroundColor:
-                        paciente.status === 'confirmado'
-                          ? Colors.online
-                          : Colors.ocupado,
-                    },
-                  ]}
-                />
+          {/* Mini resumo */}
+          <View style={[estilos.resumoStats, { borderTopColor: cores.separador }]}>
+            {[
+              { label: 'Total', valor: pacientesHoje.length },
+              { label: 'Concluídas', valor: pacientesHoje.filter((p) => p.concluido).length },
+              { label: 'Pendentes', valor: pacientesHoje.filter((p) => !p.concluido).length },
+            ].map((s) => (
+              <View key={s.label} style={estilos.statItem}>
+                <Text style={[estilos.statNum, { color: cores.primaria }]}>{s.valor}</Text>
+                <Text style={[estilos.statLabel, { color: cores.textoSecundario }]}>{s.label}</Text>
               </View>
+            ))}
+          </View>
+        </View>
 
-              {/* Info do paciente */}
-              <Avatar nome={paciente.nome} tamanho="sm" />
-              <View style={estilos.pacienteInfo}>
-                <Text style={estilos.pacienteNome}>{paciente.nome}</Text>
-                <Text style={estilos.pacienteSessao}>
-                  Sessão #{paciente.sessaoNumero}
+        {/* Lista pacientes */}
+        <Text style={[estilos.secaoTitulo, { color: cores.textoPrincipal }]}>Pacientes de hoje</Text>
+        {pacientesHoje.map((p) => (
+          <View key={p.id} style={[estilos.cardPaciente, { backgroundColor: cores.card }, Sombra.card]}>
+            <View style={[estilos.avatarPac, { backgroundColor: cores.verdeClaro }]}>
+              <Text style={[estilos.avatarPacTexto, { color: cores.primaria }]}>{iniciais(p.nome)}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[estilos.pacNome, { color: cores.textoPrincipal }]}>{p.nome}</Text>
+              <View style={estilos.horaRow}>
+                <Ionicons name="time-outline" size={13} color={cores.textoSecundario} />
+                <Text style={[estilos.pacHora, { color: cores.textoSecundario }]}>
+                  {p.hora} · Sessão #{p.sessao}
                 </Text>
               </View>
-
-              {/* Botões de ação */}
+            </View>
+            {/* Badge avaliar */}
+            {p.concluido && (
+              <TouchableOpacity
+                style={[estilos.badgeAvaliar, { backgroundColor: '#fff8e1' }]}
+                onPress={() => router.push(`/(psicologo)/avaliar/${p.id}` as any)}
+              >
+                <Text style={[estilos.badgeAvaliarTexto, { color: '#f9a825' }]}>Avaliar</Text>
+              </TouchableOpacity>
+            )}
+            {/* Botões ação */}
+            {!p.concluido && (
               <View style={estilos.acoes}>
                 <TouchableOpacity
-                  style={estilos.botaoAcao}
-                  onPress={() => router.push('/(psicologo)/chat')}
+                  style={[estilos.botaoOutline, { borderColor: cores.primaria }]}
+                  onPress={() => router.push(`/chat/${p.id}` as any)}
                 >
-                  <Text style={estilos.botaoAcaoIcone}>💬</Text>
+                  <Text style={[estilos.botaoOutlineTexto, { color: cores.primaria }]}>Chat</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[estilos.botaoAcao, estilos.botaoAcaoPrimario]}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(psicologo)/chamada',
-                      params: { modo: 'voz' },
-                    })
-                  }
+                  style={[estilos.botaoSolido, { backgroundColor: cores.primaria }]}
+                  onPress={() => router.push(`/chamada/${p.id}?modo=voz` as any)}
                 >
-                  <Text style={estilos.botaoAcaoIcone}>📞</Text>
+                  <Text style={estilos.botaoSolidoTexto}>Chamada</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ))}
-        </View>
+            )}
+          </View>
+        ))}
+
+        <View style={{ height: Espacamento.xxl }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const estilos = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.fundo,
-  },
-  conteudo: {
-    padding: Espacamento.lg,
-    paddingBottom: Espacamento.xxl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Espacamento.md,
-  },
-  headerEsquerda: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Espacamento.md,
-  },
-  saudacao: {
-    ...Tipografia.subtitulo,
-    fontSize: 17,
-  },
-  crp: {
-    ...Tipografia.pequeno,
-    marginTop: 2,
-  },
-  toggleContainer: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  toggleLabel: {
-    ...Tipografia.pequeno,
-    fontWeight: '600',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Espacamento.sm,
-    marginBottom: Espacamento.xl,
-    backgroundColor: Colors.branco,
-    padding: Espacamento.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.borda,
-  },
-  statusTexto: {
-    ...Tipografia.corpoSecundario,
-    flex: 1,
-  },
-  secaoTitulo: {
-    ...Tipografia.subtitulo,
-    marginBottom: Espacamento.md,
-  },
-  resumo: {
-    flexDirection: 'row',
-    gap: Espacamento.md,
-    marginBottom: Espacamento.xl,
-  },
-  resumoCard: {
-    flex: 1,
-    backgroundColor: Colors.branco,
-    borderRadius: BorderRadius.lg,
-    padding: Espacamento.md,
-    alignItems: 'center',
-    ...Sombra.leve,
-  },
-  resumoCardDestaque: {
-    backgroundColor: Colors.primaria,
-    ...Sombra.forte,
-  },
-  resumoNumero: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.primaria,
-    fontFamily: 'sans-serif',
-  },
-  resumoLabel: {
-    ...Tipografia.pequeno,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  listaPacientes: {
-    gap: Espacamento.sm,
-  },
-  cardPaciente: {
-    backgroundColor: Colors.branco,
-    borderRadius: BorderRadius.lg,
-    padding: Espacamento.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Espacamento.md,
-    ...Sombra.leve,
-  },
-  horarioContainer: {
-    alignItems: 'center',
-    width: 44,
-  },
-  horario: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primaria,
-    fontFamily: 'sans-serif',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 4,
-  },
-  pacienteInfo: {
-    flex: 1,
-  },
-  pacienteNome: {
-    ...Tipografia.label,
-  },
-  pacienteSessao: {
-    ...Tipografia.pequeno,
-    marginTop: 2,
-  },
-  acoes: {
-    flexDirection: 'row',
-    gap: Espacamento.xs,
-  },
-  botaoAcao: {
-    width: 38,
-    height: 38,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.verdeClaro,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  botaoAcaoPrimario: {
-    backgroundColor: Colors.primaria,
-  },
-  botaoAcaoIcone: {
-    fontSize: 16,
-  },
+  container: { flex: 1 },
+  headerSaudacao: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 12 },
+  saudacao: { fontFamily: 'serif', fontSize: 24, fontWeight: '700' },
+  crp: { fontSize: 13, marginTop: 2 },
+  headerDireita: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  toggleContainer: { alignItems: 'center', gap: 2 },
+  toggleLabel: { fontSize: 11, fontWeight: '600' },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  avatarTexto: { fontWeight: '700', fontSize: 16 },
+  card: { marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 16 },
+  resumoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  resumoTitulo: { fontFamily: 'serif', fontSize: 18, fontWeight: '700' },
+  resumoNum: { fontSize: 15, fontWeight: '700', marginTop: 2 },
+  resumoStats: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 12 },
+  statItem: { flex: 1, alignItems: 'center' },
+  statNum: { fontSize: 22, fontWeight: '700' },
+  statLabel: { fontSize: 12, marginTop: 2 },
+  secaoTitulo: { fontFamily: 'serif', fontSize: 18, fontWeight: '700', marginHorizontal: 16, marginBottom: 10 },
+  cardPaciente: { marginHorizontal: 16, borderRadius: 16, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarPac: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  avatarPacTexto: { fontWeight: '700', fontSize: 14 },
+  pacNome: { fontSize: 15, fontWeight: '700' },
+  horaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  pacHora: { fontSize: 13 },
+  badgeAvaliar: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  badgeAvaliarTexto: { fontSize: 12, fontWeight: '700' },
+  acoes: { flexDirection: 'row', gap: 6 },
+  botaoOutline: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1.5 },
+  botaoOutlineTexto: { fontSize: 12, fontWeight: '600' },
+  botaoSolido: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  botaoSolidoTexto: { color: '#fff', fontSize: 12, fontWeight: '600' },
 });

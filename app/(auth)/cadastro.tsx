@@ -1,196 +1,229 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, StyleSheet, TouchableOpacity, SafeAreaView,
+  ScrollView, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { MaskedTextInput } from 'react-native-mask-text';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Input from '../../components/ui/Input';
-import Button from '../../components/ui/Button';
-import { useGoogleAuth } from '../../hooks/useGoogleAuth';
-import { Colors, Espacamento, BorderRadius, Tipografia, Sombra } from '../../constants/theme';
+import Header from '../../components/Header';
+import { useTheme } from '../../hooks/useTheme';
+import { Espacamento } from '../../constants/theme';
 
 type Role = 'paciente' | 'psicologo';
 
-const configPorRole: Record<Role, { icone: string; titulo: string; subtitulo: string }> = {
-  paciente: {
-    icone: '🧘',
-    titulo: 'Criar sua conta',
-    subtitulo: 'Comece sua jornada de bem-estar com o Cedro.',
-  },
-  psicologo: {
-    icone: '🩺',
-    titulo: 'Cadastro de psicólogo',
-    subtitulo: 'Crie sua conta e comece a atender pela plataforma.',
-  },
-};
-
 export default function Cadastro() {
   const router = useRouter();
+  const { cores } = useTheme();
   const { role } = useLocalSearchParams<{ role: Role }>();
   const perfil = role ?? 'paciente';
-  const config = configPorRole[perfil];
+  const ehPsicologo = perfil === 'psicologo';
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [confirmar, setConfirmar] = useState('');
   const [crp, setCrp] = useState('');
   const [especialidade, setEspecialidade] = useState('');
+  const [senhaVisivel, setSenhaVisivel] = useState(false);
+  const [confirmarVisivel, setConfirmarVisivel] = useState(false);
+  const [termos, setTermos] = useState(false);
+  const [focado, setFocado] = useState('');
   const [carregando, setCarregando] = useState(false);
-  const [carregandoGoogle, setCarregandoGoogle] = useState(false);
-  const [erroSenha, setErroSenha] = useState('');
+  const [erros, setErros] = useState<Record<string, string>>({});
 
-  const { request, promptAsync } = useGoogleAuth(() => {
-    setCarregandoGoogle(false);
-    router.replace(perfil === 'psicologo' ? '/(psicologo)/home' : '/(paciente)/home');
-  });
+  const validarEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+  const formularioValido = () => {
+    if (!nome.trim() || !validarEmail(email) || telefone.length < 14) return false;
+    if (senha.length < 6 || senha !== confirmar) return false;
+    if (!termos) return false;
+    if (ehPsicologo && (!crp.trim() || !especialidade.trim())) return false;
+    return true;
+  };
 
   const cadastrar = () => {
-    if (senha !== confirmarSenha) {
-      setErroSenha('As senhas não coincidem');
-      return;
-    }
-    setErroSenha('');
+    const novosErros: Record<string, string> = {};
+    if (!nome.trim()) novosErros.nome = '⚠ Campo obrigatório';
+    if (!validarEmail(email)) novosErros.email = '⚠ E-mail inválido';
+    if (telefone.length < 14) novosErros.telefone = '⚠ Telefone inválido';
+    if (senha.length < 6) novosErros.senha = '⚠ Mínimo 6 caracteres';
+    if (senha !== confirmar) novosErros.confirmar = '⚠ As senhas não coincidem';
+    if (!termos) novosErros.termos = '⚠ Aceite os termos para continuar';
+    if (ehPsicologo && !crp.trim()) novosErros.crp = '⚠ Campo obrigatório';
+    if (ehPsicologo && !especialidade.trim()) novosErros.especialidade = '⚠ Campo obrigatório';
+    if (Object.keys(novosErros).length > 0) { setErros(novosErros); return; }
     setCarregando(true);
     setTimeout(() => {
       setCarregando(false);
-      router.replace(perfil === 'psicologo' ? '/(psicologo)/home' : '/(paciente)/home');
+      router.replace(ehPsicologo ? '/(psicologo)/home' : '/(tabs)');
     }, 1400);
   };
 
-  const cadastrarComGoogle = async () => {
-    setCarregandoGoogle(true);
-    await promptAsync();
-    setCarregandoGoogle(false);
-  };
+  const estiloInput = (campo: string) => ({
+    borderColor: erros[campo] ? cores.erro : focado === campo ? cores.bordaFoco : cores.borda,
+    borderWidth: focado === campo ? 2 : 1.5,
+    backgroundColor: focado === campo ? cores.inputFundoFocado : cores.inputFundo,
+  });
 
-  const formularioValido =
-    nome.trim() &&
-    email.trim() &&
-    senha.trim() &&
-    confirmarSenha.trim() &&
-    (perfil === 'paciente' || (crp.trim() && especialidade.trim()));
+  const Campo = ({ campo, label, children }: { campo: string; label: string; children: React.ReactNode }) => (
+    <View style={{ marginBottom: Espacamento.sm }}>
+      <Text style={[estilos.label, { color: cores.textoSecundario }]}>{label}</Text>
+      {children}
+      {erros[campo] ? <Text style={[estilos.erro, { color: cores.erro }]}>{erros[campo]}</Text> : null}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={estilos.container}>
+    <SafeAreaView style={[estilos.container, { backgroundColor: cores.fundo }]}>
+      <Header
+        titulo={ehPsicologo ? 'Cadastro de psicólogo' : 'Criar conta'}
+        mostrarVoltar
+      />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={estilos.conteudo}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Botão voltar */}
-          <TouchableOpacity style={estilos.botaoVoltar} onPress={() => router.back()}>
-            <Text style={estilos.textoVoltar}>← Voltar</Text>
-          </TouchableOpacity>
+        <ScrollView contentContainerStyle={estilos.conteudo} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-          {/* Header */}
-          <Text style={estilos.icone}>{config.icone}</Text>
-          <Text style={estilos.titulo}>{config.titulo}</Text>
-          <Text style={estilos.subtitulo}>{config.subtitulo}</Text>
-
-          {/* Campos comuns */}
-          <Input
-            label="Nome completo"
-            placeholder="Seu nome"
-            value={nome}
-            onChangeText={setNome}
-            autoCapitalize="words"
-          />
-          <Input
-            label="E-mail"
-            placeholder="seu@email.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-          />
-          <Input
-            label="Senha"
-            placeholder="Mínimo 6 caracteres"
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry
-          />
-          <Input
-            label="Confirmar senha"
-            placeholder="Repita sua senha"
-            value={confirmarSenha}
-            onChangeText={setConfirmarSenha}
-            secureTextEntry
-            erro={erroSenha}
-          />
-
-          {/* Campos exclusivos do psicólogo */}
-          {perfil === 'psicologo' && (
-            <>
-              <View style={estilos.separador}>
-                <Text style={estilos.separadorTexto}>Dados profissionais</Text>
-              </View>
-              <Input
-                label="CRP"
-                placeholder="Ex: 06/12345"
-                value={crp}
-                onChangeText={setCrp}
-                autoCapitalize="characters"
-              />
-              <Input
-                label="Especialidade"
-                placeholder="Ex: Psicologia Clínica"
-                value={especialidade}
-                onChangeText={setEspecialidade}
+          {/* Nome */}
+          <Campo campo="nome" label="Nome completo">
+            <View style={[estilos.inputRow, estiloInput('nome')]}>
+              <Ionicons name="person-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+              <TextInput
+                style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                placeholder="Seu nome completo" placeholderTextColor="#9e9e9e"
+                value={nome} onChangeText={(v) => { setNome(v); setErros((e) => ({ ...e, nome: '' })); }}
                 autoCapitalize="words"
+                onFocus={() => setFocado('nome')} onBlur={() => setFocado('')}
               />
+            </View>
+          </Campo>
+
+          {/* E-mail */}
+          <Campo campo="email" label="E-mail">
+            <View style={[estilos.inputRow, estiloInput('email')]}>
+              <Ionicons name="mail-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+              <TextInput
+                style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                placeholder="seu@email.com" placeholderTextColor="#9e9e9e"
+                value={email} onChangeText={(v) => { setEmail(v); setErros((e) => ({ ...e, email: '' })); }}
+                keyboardType="email-address" autoCapitalize="none"
+                onFocus={() => setFocado('email')} onBlur={() => setFocado('')}
+              />
+            </View>
+          </Campo>
+
+          {/* Telefone */}
+          <Campo campo="telefone" label="Telefone">
+            <View style={[estilos.inputRow, estiloInput('telefone')]}>
+              <Ionicons name="call-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+              <MaskedTextInput
+                mask="(99) 99999-9999"
+                style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                placeholder="(11) 99999-9999" placeholderTextColor="#9e9e9e"
+                value={telefone} onChangeText={(v) => { setTelefone(v); setErros((e) => ({ ...e, telefone: '' })); }}
+                keyboardType="phone-pad"
+                onFocus={() => setFocado('telefone')} onBlur={() => setFocado('')}
+              />
+            </View>
+          </Campo>
+
+          {/* CRP e Especialidade — psicólogo */}
+          {ehPsicologo && (
+            <>
+              <Campo campo="crp" label="CRP">
+                <View style={[estilos.inputRow, estiloInput('crp')]}>
+                  <Ionicons name="card-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+                  <MaskedTextInput
+                    mask="CRP 99/99999"
+                    style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                    placeholder="CRP 06/12345" placeholderTextColor="#9e9e9e"
+                    value={crp} onChangeText={(v) => { setCrp(v); setErros((e) => ({ ...e, crp: '' })); }}
+                    autoCapitalize="characters"
+                    onFocus={() => setFocado('crp')} onBlur={() => setFocado('')}
+                  />
+                </View>
+              </Campo>
+              <Campo campo="especialidade" label="Especialidade">
+                <View style={[estilos.inputRow, estiloInput('especialidade')]}>
+                  <Ionicons name="briefcase-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+                  <TextInput
+                    style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                    placeholder="Ex: Psicóloga Clínica" placeholderTextColor="#9e9e9e"
+                    value={especialidade} onChangeText={(v) => { setEspecialidade(v); setErros((e) => ({ ...e, especialidade: '' })); }}
+                    autoCapitalize="words"
+                    onFocus={() => setFocado('especialidade')} onBlur={() => setFocado('')}
+                  />
+                </View>
+              </Campo>
             </>
           )}
 
-          {/* Termos */}
-          <Text style={estilos.termos}>
-            Ao se cadastrar, você concorda com os{' '}
-            <Text style={estilos.termosLink}>Termos de Uso</Text>
-            {' '}e a{' '}
-            <Text style={estilos.termosLink}>Política de Privacidade</Text>
-            {' '}do Cedro.
-          </Text>
+          {/* Senha */}
+          <Campo campo="senha" label="Senha">
+            <View style={[estilos.inputRow, estiloInput('senha')]}>
+              <Ionicons name="lock-closed-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+              <TextInput
+                style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                placeholder="Mínimo 6 caracteres" placeholderTextColor="#9e9e9e"
+                value={senha} onChangeText={(v) => { setSenha(v); setErros((e) => ({ ...e, senha: '' })); }}
+                secureTextEntry={!senhaVisivel}
+                onFocus={() => setFocado('senha')} onBlur={() => setFocado('')}
+              />
+              <TouchableOpacity onPress={() => setSenhaVisivel(!senhaVisivel)} style={estilos.olho}>
+                <Ionicons name={senhaVisivel ? 'eye' : 'eye-off'} size={20} color="#9e9e9e" />
+              </TouchableOpacity>
+            </View>
+          </Campo>
 
-          <Button
-            titulo="Criar conta"
-            onPress={cadastrar}
-            carregando={carregando}
-            desabilitado={!formularioValido}
-          />
+          {/* Confirmar senha */}
+          <Campo campo="confirmar" label="Confirmar senha">
+            <View style={[estilos.inputRow, estiloInput('confirmar')]}>
+              <Ionicons name="lock-closed-outline" size={18} color="#9e9e9e" style={estilos.inputIcone} />
+              <TextInput
+                style={[estilos.inputFlex, { color: cores.textoPrincipal }]}
+                placeholder="Repita sua senha" placeholderTextColor="#9e9e9e"
+                value={confirmar} onChangeText={(v) => { setConfirmar(v); setErros((e) => ({ ...e, confirmar: '' })); }}
+                secureTextEntry={!confirmarVisivel}
+                onFocus={() => setFocado('confirmar')} onBlur={() => setFocado('')}
+              />
+              <TouchableOpacity onPress={() => setConfirmarVisivel(!confirmarVisivel)} style={estilos.olho}>
+                <Ionicons name={confirmarVisivel ? 'eye' : 'eye-off'} size={20} color="#9e9e9e" />
+              </TouchableOpacity>
+            </View>
+          </Campo>
 
-          {/* Divisor */}
-          <View style={estilos.divisor}>
-            <View style={estilos.linhaDivisor} />
-            <Text style={estilos.textoDivisor}>ou</Text>
-            <View style={estilos.linhaDivisor} />
-          </View>
+          {/* Checkbox termos */}
+          <TouchableOpacity
+            style={estilos.checkboxRow}
+            onPress={() => { setTermos(!termos); setErros((e) => ({ ...e, termos: '' })); }}
+            activeOpacity={0.8}
+          >
+            <View style={[estilos.checkbox, { borderColor: termos ? cores.primaria : cores.borda, backgroundColor: termos ? cores.primaria : 'transparent' }]}>
+              {termos && <Ionicons name="checkmark" size={14} color="#fff" />}
+            </View>
+            <Text style={[estilos.checkboxTexto, { color: cores.textoSecundario }]}>
+              Li e aceito os{' '}
+              <Text style={[estilos.checkboxLink, { color: cores.primaria }]}>Termos de Uso</Text>
+            </Text>
+          </TouchableOpacity>
+          {erros.termos && <Text style={[estilos.erro, { color: cores.erro }]}>{erros.termos}</Text>}
 
-          {/* Google */}
-          <Button
-            titulo={carregandoGoogle ? 'Conectando...' : 'Cadastrar com Google'}
-            onPress={cadastrarComGoogle}
-            variante="secondary"
-            carregando={carregandoGoogle}
-            desabilitado={!request}
-          />
+          {/* Botão criar conta */}
+          <TouchableOpacity
+            style={[estilos.botao, { backgroundColor: formularioValido() ? cores.primaria : cores.botaoDesabilitado, marginTop: Espacamento.md }]}
+            onPress={cadastrar} disabled={carregando} activeOpacity={0.85}
+          >
+            <Text style={estilos.botaoTexto}>{carregando ? 'Criando conta...' : 'Criar conta'}</Text>
+          </TouchableOpacity>
 
           {/* Link login */}
           <TouchableOpacity
             style={estilos.linkLogin}
             onPress={() => router.push({ pathname: '/(auth)/login', params: { role: perfil } })}
           >
-            <Text style={estilos.textoLink}>
+            <Text style={[estilos.linkTexto, { color: cores.textoSecundario }]}>
               Já tem conta?{' '}
-              <Text style={estilos.textoLinkDestaque}>Entrar</Text>
+              <Text style={[estilos.linkDestaque, { color: cores.primaria }]}>Entrar</Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -200,87 +233,21 @@ export default function Cadastro() {
 }
 
 const estilos = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.fundo,
-  },
-  conteudo: {
-    padding: Espacamento.lg,
-    paddingTop: Espacamento.md,
-    flexGrow: 1,
-  },
-  botaoVoltar: {
-    alignSelf: 'flex-start',
-    paddingVertical: Espacamento.sm,
-    marginBottom: Espacamento.md,
-  },
-  textoVoltar: {
-    ...Tipografia.corpoSecundario,
-    fontWeight: '600',
-    color: Colors.primaria,
-  },
-  icone: {
-    fontSize: 48,
-    marginBottom: Espacamento.md,
-  },
-  titulo: {
-    ...Tipografia.titulo,
-    marginBottom: Espacamento.xs,
-  },
-  subtitulo: {
-    ...Tipografia.corpoSecundario,
-    lineHeight: 22,
-    marginBottom: Espacamento.xl,
-  },
-  separador: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.borda,
-    paddingTop: Espacamento.md,
-    marginBottom: Espacamento.md,
-    marginTop: Espacamento.sm,
-  },
-  separadorTexto: {
-    ...Tipografia.label,
-    color: Colors.textoSecundario,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontSize: 11,
-  },
-  termos: {
-    ...Tipografia.pequeno,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: Espacamento.lg,
-    marginTop: Espacamento.sm,
-  },
-  termosLink: {
-    color: Colors.primaria,
-    fontWeight: '600',
-  },
-  divisor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Espacamento.lg,
-    gap: Espacamento.md,
-  },
-  linhaDivisor: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.borda,
-  },
-  textoDivisor: {
-    ...Tipografia.corpoSecundario,
-  },
-  linkLogin: {
-    alignItems: 'center',
-    marginTop: Espacamento.xl,
-    paddingVertical: Espacamento.sm,
-  },
-  textoLink: {
-    ...Tipografia.corpoSecundario,
-  },
-  textoLinkDestaque: {
-    color: Colors.primaria,
-    fontWeight: '700',
-  },
+  container: { flex: 1 },
+  conteudo: { padding: Espacamento.md, paddingBottom: Espacamento.xxl },
+  label: { fontSize: 13, marginBottom: 6 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 12 },
+  inputIcone: { marginRight: 8 },
+  inputFlex: { flex: 1, paddingVertical: 14, fontSize: 15 },
+  olho: { padding: 4 },
+  erro: { fontSize: 12, marginTop: 2, marginBottom: 4 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: Espacamento.sm, marginBottom: 4 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  checkboxTexto: { fontSize: 14, flex: 1 },
+  checkboxLink: { fontWeight: '600' },
+  botao: { paddingVertical: 16, borderRadius: 12, alignItems: 'center', shadowColor: '#2e7d32', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, elevation: 4 },
+  botaoTexto: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  linkLogin: { alignItems: 'center', paddingVertical: Espacamento.md },
+  linkTexto: { fontSize: 14 },
+  linkDestaque: { fontWeight: '700' },
 });

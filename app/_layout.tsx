@@ -1,17 +1,27 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
+import SOSButton from '../components/SOSButton';
 
-// Layout raiz — define a pilha de navegação global
+// Telas onde o SOS não aparece
+const TELAS_SEM_SOS = ['/chamada'];
+
 export default function RootLayout() {
+  const pathname = usePathname();
+  const mostrarSOS = !TELAS_SEM_SOS.some((t) => pathname.includes(t));
+
   return (
-    <>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1 }}>
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(paciente)" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(psicologo)" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="chamada/[id]" />
       </Stack>
-    </>
+      {mostrarSOS && <SOSButton />}
+    </View>
   );
 }

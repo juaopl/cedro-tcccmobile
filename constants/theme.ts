@@ -1,45 +1,54 @@
-// Identidade visual do Cedro — plataforma de apoio psicológico
+// Tema do Cedro — modo claro e escuro
 
-export const Colors = {
-  // Cores principais
-  primaria: '#2e7d32',
-  secundaria: '#4caf50',
-
-  // Fundos
-  fundo: '#f9f3f0',
-  verdeClaro: '#e8f5e9',
-  branco: '#ffffff',
-  fundoEscuro: '#1a2e1b',
-
-  // Textos
-  textoPrincipal: '#1a2e1b',
-  textoSecundario: '#5a7a5c',
-  textoClaro: '#ffffff',
-  textoDesabilitado: '#a5c8a7',
-
-  // Bordas
-  borda: '#c8e6c9',
-  bordaFoco: '#2e7d32',
-
-  // Status
-  online: '#4caf50',
-  offline: '#9e9e9e',
-  ocupado: '#ffc107',
-
-  // Ações
-  erro: '#c62828',
-  aviso: '#f57f17',
-  sucesso: '#2e7d32',
-
-  // Chamada
-  encerrar: '#d32f2f',
-  fundoChamada: '#1a2e1b',
-
-  // Mensagens
-  bolhaEnviada: '#2e7d32',
-  bolhaRecebida: '#f0f0f0',
-  textoBolhaEnviada: '#ffffff',
-  textoBolhaRecebida: '#1a2e1b',
+export const colors = {
+  light: {
+    primaria: '#2e7d32',
+    secundaria: '#4caf50',
+    fundo: '#f9f3f0',
+    card: '#ffffff',
+    verdeClaro: '#e8f5e9',
+    borda: '#c8e6c9',
+    bordaFoco: '#2e7d32',
+    textoPrincipal: '#1a2e1b',
+    textoSecundario: '#5a7a5c',
+    textoDesabilitado: '#9e9e9e',
+    branco: '#ffffff',
+    erro: '#c62828',
+    sos: '#e53935',
+    amarelo: '#f9a825',
+    amareloFundo: '#fffde7',
+    tabBar: '#ffffff',
+    tabBorda: '#f0f0f0',
+    inputFundo: '#ffffff',
+    inputFundoFocado: '#e8f5e9',
+    separador: '#f0f0f0',
+    overlay: 'rgba(0,0,0,0.6)',
+    botaoDesabilitado: '#a5d6a7',
+  },
+  dark: {
+    primaria: '#4caf50',
+    secundaria: '#66bb6a',
+    fundo: '#0f1f10',
+    card: '#1a2e1b',
+    verdeClaro: '#1e3320',
+    borda: '#2e7d32',
+    bordaFoco: '#4caf50',
+    textoPrincipal: '#e8f5e9',
+    textoSecundario: '#a5d6a7',
+    textoDesabilitado: '#5a7a5c',
+    branco: '#ffffff',
+    erro: '#ef5350',
+    sos: '#e53935',
+    amarelo: '#f9a825',
+    amareloFundo: '#2a2000',
+    tabBar: '#0f1f10',
+    tabBorda: '#1a2e1b',
+    inputFundo: '#1e3320',
+    inputFundoFocado: '#1a2e1b',
+    separador: '#1a2e1b',
+    overlay: 'rgba(0,0,0,0.8)',
+    botaoDesabilitado: '#2e5c30',
+  },
 };
 
 export const Espacamento = {
@@ -51,79 +60,28 @@ export const Espacamento = {
   xxl: 48,
 };
 
-export const Tipografia = {
-  // Títulos — serif para acolhimento
-  tituloGrande: {
-    fontFamily: 'serif',
-    fontSize: 32,
-    fontWeight: '700' as const,
-    color: Colors.textoPrincipal,
-  },
-  titulo: {
-    fontFamily: 'serif',
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: Colors.textoPrincipal,
-  },
-  subtitulo: {
-    fontFamily: 'serif',
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: Colors.textoPrincipal,
-  },
-
-  // Corpo — sans-serif para legibilidade
-  corpo: {
-    fontFamily: 'sans-serif',
-    fontSize: 16,
-    color: Colors.textoPrincipal,
-  },
-  corpoSecundario: {
-    fontFamily: 'sans-serif',
-    fontSize: 14,
-    color: Colors.textoSecundario,
-  },
-  pequeno: {
-    fontFamily: 'sans-serif',
-    fontSize: 12,
-    color: Colors.textoSecundario,
-  },
-  label: {
-    fontFamily: 'sans-serif',
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.textoPrincipal,
-  },
-};
-
 export const BorderRadius = {
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  md: 10,
+  lg: 12,
+  xl: 16,
+  xxl: 20,
   full: 999,
 };
 
 export const Sombra = {
-  leve: {
+  card: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
-  media: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  forte: {
+  botao: {
     shadowColor: '#2e7d32',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
 };
