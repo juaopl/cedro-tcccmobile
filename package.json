@@ -9,7 +9,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "--legacy-peer-deps": "^0.0.1-security.6",
     "@expo/vector-icons": "^15.0.3",
     "expo": "~54.0.0",
     "expo-linear-gradient": "~15.0.8",
